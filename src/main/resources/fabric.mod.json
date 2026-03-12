@@ -1,0 +1,23 @@
+{
+    "schemaVersion": 1,
+    "id": "pocketcanvascore",
+    "version": "${version}",
+    "name": "PocketCanvas Core",
+    "description": "Low-level procedural rendering API for Minecraft. Abstracts BufferBuilder, Tessellator, and DrawContext into simple one-line drawing methods for 2D shapes, icons, and UI components.",
+    "authors": ["Uipg9"],
+    "contact": {
+        "sources": "https://github.com/Uipg9/PocketCanvasCore"
+    },
+    "license": "MIT",
+    "icon": "",
+    "environment": "client",
+    "entrypoints": {
+        "client": ["com.pocketcanvascore.PocketCanvasCoreClient"]
+    },
+    "depends": {
+        "fabricloader": ">=0.18.0",
+        "minecraft": ">=1.21.11",
+        "java": ">=21",
+        "fabric-api": "*"
+    }
+}
