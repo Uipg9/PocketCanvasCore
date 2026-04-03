@@ -1,22 +1,33 @@
 package com.pocketcanvascore.render;
 
-import net.minecraft.client.gui.DrawContext;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
- * Primitive 2D drawing API for Minecraft 1.21.11 (Fabric / Yarn).
+ * Primitive 2D drawing API backed by PocketRenderContext adapters.
  * <p>
- * Wraps {@link DrawContext} into simple one-line static methods. All colours
+ * Wraps version-specific GUI graphics into simple one-line methods. All colours
  * are standard ARGB ({@code 0xAARRGGBB}).
  * <p>
  * Every shape is rendered via the scanline-fill approach using
- * {@code DrawContext.fill}, ensuring full compatibility with the
- * Minecraft 1.21.11 rendering pipeline.
+ * {@code graphics.fill}, ensuring full compatibility with the active
+ * runtime rendering pipeline.
  */
 public final class PocketCanvas {
-    private PocketCanvas() {}
+    private final PocketRenderContext ctx;
+
+    public PocketCanvas(PocketRenderContext ctx) {
+        this.ctx = Objects.requireNonNull(ctx, "ctx");
+    }
+
+    public PocketRenderContext context() {
+        return ctx;
+    }
+
+    public float delta() {
+        return ctx.delta();
+    }
 
     // =====================================================================
     //  Scanline geometry cache
@@ -95,16 +106,15 @@ public final class PocketCanvas {
     /**
      * Solid-colour filled rectangle.
      *
-     * @param context DrawContext from the current render call
      * @param x       left edge
      * @param y       top edge
      * @param width   width in pixels
      * @param height  height in pixels
      * @param color   ARGB colour
      */
-    public static void drawRect(DrawContext context, int x, int y, int width, int height, int color) {
+    public void drawRect(int x, int y, int width, int height, int color) {
         if (width <= 0 || height <= 0) return;
-        context.fill(x, y, x + width, y + height, color);
+        ctx.graphics().fill(x, y, x + width, y + height, color);
     }
 
     // =====================================================================
@@ -118,33 +128,33 @@ public final class PocketCanvas {
      *
      * @param cornerRadius corner radius in pixels (clamped to half of min dimension)
      */
-    public static void drawRoundedRect(DrawContext context, int x, int y,
-                                       int width, int height,
-                                       int cornerRadius, int color) {
+    public void drawRoundedRect(int x, int y,
+                                int width, int height,
+                                int cornerRadius, int color) {
         if (width <= 0 || height <= 0) return;
         cornerRadius = Math.min(cornerRadius, Math.min(width, height) / 2);
         if (cornerRadius <= 0) {
-            drawRect(context, x, y, width, height, color);
+            drawRect(x, y, width, height, color);
             return;
         }
 
         // Body rectangles (no overlap)
-        context.fill(x + cornerRadius, y, x + width - cornerRadius, y + height, color);
-        context.fill(x, y + cornerRadius, x + cornerRadius, y + height - cornerRadius, color);
-        context.fill(x + width - cornerRadius, y + cornerRadius, x + width, y + height - cornerRadius, color);
+        ctx.graphics().fill(x + cornerRadius, y, x + width - cornerRadius, y + height, color);
+        ctx.graphics().fill(x, y + cornerRadius, x + cornerRadius, y + height - cornerRadius, color);
+        ctx.graphics().fill(x + width - cornerRadius, y + cornerRadius, x + width, y + height - cornerRadius, color);
 
         // Corner scanlines
         int[] dxArr = getScanlineDx(cornerRadius);
         for (int i = 0; i < cornerRadius; i++) {
             int arcDx = dxArr[i];
             // Top-left
-            context.fill(x + cornerRadius - arcDx, y + i, x + cornerRadius, y + i + 1, color);
+            ctx.graphics().fill(x + cornerRadius - arcDx, y + i, x + cornerRadius, y + i + 1, color);
             // Top-right
-            context.fill(x + width - cornerRadius, y + i, x + width - cornerRadius + arcDx, y + i + 1, color);
+            ctx.graphics().fill(x + width - cornerRadius, y + i, x + width - cornerRadius + arcDx, y + i + 1, color);
             // Bottom-left
-            context.fill(x + cornerRadius - arcDx, y + height - 1 - i, x + cornerRadius, y + height - i, color);
+            ctx.graphics().fill(x + cornerRadius - arcDx, y + height - 1 - i, x + cornerRadius, y + height - i, color);
             // Bottom-right
-            context.fill(x + width - cornerRadius, y + height - 1 - i, x + width - cornerRadius + arcDx, y + height - i, color);
+            ctx.graphics().fill(x + width - cornerRadius, y + height - 1 - i, x + width - cornerRadius + arcDx, y + height - i, color);
         }
     }
 
@@ -153,35 +163,35 @@ public final class PocketCanvas {
     // =====================================================================
 
     /** 1-pixel rounded border (outline only, no fill). */
-    public static void drawRoundedBorder(DrawContext context, int x, int y,
-                                         int width, int height,
-                                         int cornerRadius, int color) {
+    public void drawRoundedBorder(int x, int y,
+                                  int width, int height,
+                                  int cornerRadius, int color) {
         if (width <= 0 || height <= 0) return;
         cornerRadius = Math.min(cornerRadius, Math.min(width, height) / 2);
         if (cornerRadius <= 0) {
             // Simple 1-pixel rect border
-            context.fill(x, y, x + width, y + 1, color);
-            context.fill(x, y + height - 1, x + width, y + height, color);
-            context.fill(x, y + 1, x + 1, y + height - 1, color);
-            context.fill(x + width - 1, y + 1, x + width, y + height - 1, color);
+            ctx.graphics().fill(x, y, x + width, y + 1, color);
+            ctx.graphics().fill(x, y + height - 1, x + width, y + height, color);
+            ctx.graphics().fill(x, y + 1, x + 1, y + height - 1, color);
+            ctx.graphics().fill(x + width - 1, y + 1, x + width, y + height - 1, color);
             return;
         }
 
         // Straight edges
-        context.fill(x + cornerRadius, y, x + width - cornerRadius, y + 1, color);
-        context.fill(x + cornerRadius, y + height - 1, x + width - cornerRadius, y + height, color);
-        context.fill(x, y + cornerRadius, x + 1, y + height - cornerRadius, color);
-        context.fill(x + width - 1, y + cornerRadius, x + width, y + height - cornerRadius, color);
+        ctx.graphics().fill(x + cornerRadius, y, x + width - cornerRadius, y + 1, color);
+        ctx.graphics().fill(x + cornerRadius, y + height - 1, x + width - cornerRadius, y + height, color);
+        ctx.graphics().fill(x, y + cornerRadius, x + 1, y + height - cornerRadius, color);
+        ctx.graphics().fill(x + width - 1, y + cornerRadius, x + width, y + height - cornerRadius, color);
 
         // Corner arcs
         int[] dxArr = getScanlineDx(cornerRadius);
         for (int i = 0; i < cornerRadius; i++) {
             int arcDx = dxArr[i];
             int prevArcDx = (i > 0) ? dxArr[i - 1] : 0;
-            context.fill(x + cornerRadius - arcDx, y + i, x + cornerRadius - prevArcDx, y + i + 1, color);
-            context.fill(x + width - cornerRadius + prevArcDx, y + i, x + width - cornerRadius + arcDx, y + i + 1, color);
-            context.fill(x + cornerRadius - arcDx, y + height - 1 - i, x + cornerRadius - prevArcDx, y + height - i, color);
-            context.fill(x + width - cornerRadius + prevArcDx, y + height - 1 - i, x + width - cornerRadius + arcDx, y + height - i, color);
+            ctx.graphics().fill(x + cornerRadius - arcDx, y + i, x + cornerRadius - prevArcDx, y + i + 1, color);
+            ctx.graphics().fill(x + width - cornerRadius + prevArcDx, y + i, x + width - cornerRadius + arcDx, y + i + 1, color);
+            ctx.graphics().fill(x + cornerRadius - arcDx, y + height - 1 - i, x + cornerRadius - prevArcDx, y + height - i, color);
+            ctx.graphics().fill(x + width - cornerRadius + prevArcDx, y + height - 1 - i, x + width - cornerRadius + arcDx, y + height - i, color);
         }
     }
 
@@ -201,8 +211,8 @@ public final class PocketCanvas {
      * @param color     ARGB colour
      * @param direction pointing direction
      */
-    public static void drawTriangle(DrawContext context, int x, int y,
-                                    int size, int color, TriangleDirection direction) {
+    public void drawTriangle(int x, int y,
+                             int size, int color, TriangleDirection direction) {
         if (size <= 0) return;
 
         float x1, y1, x2, y2, x3, y3;
@@ -230,17 +240,17 @@ public final class PocketCanvas {
                 break;
         }
 
-        drawTriangleVertices(context, x1, y1, x2, y2, x3, y3, color);
+        drawTriangleVertices(x1, y1, x2, y2, x3, y3, color);
     }
 
     /**
      * Arbitrary triangle from three vertices. Useful for custom icon shapes.
-     * Uses scanline rasterization via {@code DrawContext.fill}.
+        * Uses scanline rasterization via {@code graphics.fill}.
      */
-    public static void drawTriangleVertices(DrawContext context,
-                                            float x1, float y1,
-                                            float x2, float y2,
-                                            float x3, float y3, int color) {
+    public void drawTriangleVertices(
+                              float x1, float y1,
+                              float x2, float y2,
+                              float x3, float y3, int color) {
         // Sort vertices by Y (top to bottom)
         float tmp;
         if (y1 > y2) { tmp = x1; x1 = x2; x2 = tmp; tmp = y1; y1 = y2; y2 = tmp; }
@@ -275,7 +285,7 @@ public final class PocketCanvas {
             int left  = (int) Math.floor(Math.min(xa, xb));
             int right = (int) Math.ceil(Math.max(xa, xb));
             if (right > left) {
-                context.fill(left, sy, right, sy + 1, color);
+                ctx.graphics().fill(left, sy, right, sy + 1, color);
             }
         }
     }
@@ -285,19 +295,19 @@ public final class PocketCanvas {
     // =====================================================================
 
     /**
-     * Filled circle using scanline fill via {@code DrawContext.fill}.
+        * Filled circle using scanline fill via {@code graphics.fill}.
      *
      * @param centerX centre X
      * @param centerY centre Y
      * @param radius  radius in pixels
      * @param color   ARGB colour
      */
-    public static void drawCircle(DrawContext context, int centerX, int centerY,
-                                  int radius, int color) {
+    public void drawCircle(int centerX, int centerY,
+                           int radius, int color) {
         if (radius <= 0) return;
         for (int dy = -radius; dy <= radius; dy++) {
             int dx = (int) Math.floor(Math.sqrt((double) radius * radius - (double) dy * dy));
-            context.fill(centerX - dx, centerY + dy, centerX + dx + 1, centerY + dy + 1, color);
+            ctx.graphics().fill(centerX - dx, centerY + dy, centerX + dx + 1, centerY + dy + 1, color);
         }
     }
 
@@ -307,7 +317,7 @@ public final class PocketCanvas {
 
     /**
      * Filled annulus (ring) for circular progress indicators.
-     * Uses scanline fill via {@code DrawContext.fill}.
+        * Uses scanline fill via {@code graphics.fill}.
      *
      * @param cx         centre X
      * @param cy         centre Y
@@ -316,9 +326,9 @@ public final class PocketCanvas {
      * @param innerColor ARGB colour at the inner edge (used for the ring)
      * @param outerColor ARGB colour at the outer edge (used for the ring)
      */
-    public static void drawAnnulus(DrawContext context, int cx, int cy,
-                                   int radius, int thickness,
-                                   int innerColor, int outerColor) {
+    public void drawAnnulus(int cx, int cy,
+                            int radius, int thickness,
+                            int innerColor, int outerColor) {
         if (radius <= 0 || thickness <= 0) return;
 
         int innerRadius = Math.max(0, radius - thickness);
@@ -334,11 +344,11 @@ public final class PocketCanvas {
 
             // Left band
             if (cx - outerDx < cx - innerDx) {
-                context.fill(cx - outerDx, cy + dy, cx - innerDx, cy + dy + 1, color);
+                ctx.graphics().fill(cx - outerDx, cy + dy, cx - innerDx, cy + dy + 1, color);
             }
             // Right band
             if (cx + innerDx < cx + outerDx + 1) {
-                context.fill(cx + innerDx, cy + dy, cx + outerDx + 1, cy + dy + 1, color);
+                ctx.graphics().fill(cx + innerDx, cy + dy, cx + outerDx + 1, cy + dy + 1, color);
             }
         }
     }
@@ -350,10 +360,10 @@ public final class PocketCanvas {
      * @param startAngle start angle in radians (0 = right / 3 o'clock)
      * @param endAngle   end angle in radians
      */
-    public static void drawAnnulusArc(DrawContext context, int cx, int cy,
-                                      int radius, int thickness,
-                                      float startAngle, float endAngle,
-                                      int innerColor, int outerColor) {
+    public void drawAnnulusArc(int cx, int cy,
+                               int radius, int thickness,
+                               float startAngle, float endAngle,
+                               int innerColor, int outerColor) {
         if (radius <= 0 || thickness <= 0) return;
 
         int innerRadius = Math.max(0, radius - thickness);
@@ -364,7 +374,7 @@ public final class PocketCanvas {
         float TWO_PI = (float) (2.0 * Math.PI);
         if (range >= TWO_PI) {
             // Full ring — delegate to drawAnnulus
-            drawAnnulus(context, cx, cy, radius, thickness, innerColor, outerColor);
+            drawAnnulus(cx, cy, radius, thickness, innerColor, outerColor);
             return;
         }
 
@@ -378,7 +388,7 @@ public final class PocketCanvas {
                 if (innerDxSq > 0 && dx * dx + dy * dy < innerRadius * innerRadius) {
                     // Inside the hole — flush any pending run
                     if (runStart != Integer.MIN_VALUE) {
-                        context.fill(cx + runStart, cy + dy, cx + dx, cy + dy + 1, color);
+                        ctx.graphics().fill(cx + runStart, cy + dy, cx + dx, cy + dy + 1, color);
                         runStart = Integer.MIN_VALUE;
                     }
                     continue;
@@ -394,14 +404,14 @@ public final class PocketCanvas {
                     if (runStart == Integer.MIN_VALUE) runStart = dx;
                 } else {
                     if (runStart != Integer.MIN_VALUE) {
-                        context.fill(cx + runStart, cy + dy, cx + dx, cy + dy + 1, color);
+                        ctx.graphics().fill(cx + runStart, cy + dy, cx + dx, cy + dy + 1, color);
                         runStart = Integer.MIN_VALUE;
                     }
                 }
             }
             // Flush remaining run
             if (runStart != Integer.MIN_VALUE) {
-                context.fill(cx + runStart, cy + dy, cx + outerDx + 1, cy + dy + 1, color);
+                ctx.graphics().fill(cx + runStart, cy + dy, cx + outerDx + 1, cy + dy + 1, color);
             }
         }
     }
@@ -416,15 +426,15 @@ public final class PocketCanvas {
      * @param layers   number of shadow layers (4–8 recommended)
      * @param maxAlpha peak alpha at innermost layer (0–255)
      */
-    public static void drawDropShadow(DrawContext context, int x, int y,
-                                      int width, int height, int cornerRadius,
-                                      int layers, int maxAlpha) {
+    public void drawDropShadow(int x, int y,
+                               int width, int height, int cornerRadius,
+                               int layers, int maxAlpha) {
         for (int i = layers; i >= 1; i--) {
             float ratio = (float) i / layers;
             int alpha = (int) (maxAlpha * ratio * ratio);
             if (alpha <= 0) continue;
             int col = alpha << 24; // black + computed alpha
-            drawRoundedRect(context,
+            drawRoundedRect(
                     x - i, y - i,
                     width + i * 2, height + i * 2,
                     cornerRadius + i, col);
@@ -432,9 +442,9 @@ public final class PocketCanvas {
     }
 
     /** Convenience overload — 6 layers, 40% peak alpha. */
-    public static void drawDropShadow(DrawContext context, int x, int y,
-                                      int width, int height, int cornerRadius) {
-        drawDropShadow(context, x, y, width, height, cornerRadius, 6, 102);
+    public void drawDropShadow(int x, int y,
+                               int width, int height, int cornerRadius) {
+        drawDropShadow(x, y, width, height, cornerRadius, 6, 102);
     }
 
     // =====================================================================
@@ -442,24 +452,24 @@ public final class PocketCanvas {
     // =====================================================================
 
     /** Vertical gradient (top → bottom). */
-    public static void drawGradientV(DrawContext context, int x, int y,
-                                     int width, int height,
-                                     int topColor, int bottomColor) {
+    public void drawGradientV(int x, int y,
+                              int width, int height,
+                              int topColor, int bottomColor) {
         if (width <= 0 || height <= 0) return;
-        context.fillGradient(x, y, x + width, y + height, topColor, bottomColor);
+        ctx.graphics().fillGradient(x, y, x + width, y + height, topColor, bottomColor);
     }
 
     /** Horizontal gradient (left → right), drawn in 4-pixel bands. */
-    public static void drawGradientH(DrawContext context, int x, int y,
-                                     int width, int height,
-                                     int leftColor, int rightColor) {
+    public void drawGradientH(int x, int y,
+                              int width, int height,
+                              int leftColor, int rightColor) {
         if (width <= 0 || height <= 0) return;
         int step = width <= 16 ? 1 : 4;
         for (int col = 0; col < width; col += step) {
             int bandW = Math.min(step, width - col);
             float t = (float) (col + bandW / 2) / Math.max(width - 1, 1);
             int c = lerpColor(leftColor, rightColor, t);
-            context.fill(x + col, y, x + col + bandW, y + height, c);
+            ctx.graphics().fill(x + col, y, x + col + bandW, y + height, c);
         }
     }
 
@@ -468,8 +478,8 @@ public final class PocketCanvas {
     // =====================================================================
 
     /** 1-pixel line between two points. */
-    public static void drawLine(DrawContext context, int x1, int y1,
-                                int x2, int y2, int color) {
+    public void drawLine(int x1, int y1,
+                         int x2, int y2, int color) {
         int dx = Math.abs(x2 - x1);
         int dy = Math.abs(y2 - y1);
         int sx = x1 < x2 ? 1 : -1;
@@ -477,7 +487,7 @@ public final class PocketCanvas {
         int err = dx - dy;
 
         while (true) {
-            context.fill(x1, y1, x1 + 1, y1 + 1, color);
+            ctx.graphics().fill(x1, y1, x1 + 1, y1 + 1, color);
             if (x1 == x2 && y1 == y2) break;
             int e2 = 2 * err;
             if (e2 > -dy) { err -= dy; x1 += sx; }
@@ -486,19 +496,19 @@ public final class PocketCanvas {
     }
 
     /** Thick line between two points. */
-    public static void drawLine(DrawContext context, int x1, int y1,
-                                int x2, int y2, int color, int thickness) {
+    public void drawLine(int x1, int y1,
+                         int x2, int y2, int color, int thickness) {
         if (thickness <= 1) {
-            drawLine(context, x1, y1, x2, y2, color);
+            drawLine(x1, y1, x2, y2, color);
             return;
         }
         int half = thickness / 2;
         boolean steep = Math.abs(y2 - y1) > Math.abs(x2 - x1);
         for (int i = -half; i <= half; i++) {
             if (steep) {
-                drawLine(context, x1 + i, y1, x2 + i, y2, color);
+                drawLine(x1 + i, y1, x2 + i, y2, color);
             } else {
-                drawLine(context, x1, y1 + i, x2, y2 + i, color);
+                drawLine(x1, y1 + i, x2, y2 + i, color);
             }
         }
     }
@@ -508,7 +518,8 @@ public final class PocketCanvas {
     // =====================================================================
 
     /** Horizontal 1-pixel divider line. */
-    public static void drawDivider(DrawContext context, int x, int y, int width, int color) {
-        context.fill(x, y, x + width, y + 1, color);
+    public void drawDivider(int x, int y, int width, int color) {
+        ctx.graphics().fill(x, y, x + width, y + 1, color);
     }
 }
+

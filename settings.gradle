@@ -9,4 +9,13 @@ pluginManagement {
     }
 }
 
+plugins {
+    id 'dev.kikugie.stonecutter' version '0.9'
+}
+
+stonecutter.create(project(':')) {
+    versions '1.21.11', '26.1'
+    vcsVersion = '26.1'
+}
+
 rootProject.name = 'pocketcanvascore'
