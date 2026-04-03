@@ -72,7 +72,7 @@ public final class PocketComponents {
         int textW = font.width(label);
         int textX = x + (width - textW) / 2;
         int textY = y + (height - 8) / 2; // 8 ~ font height
-        context.graphics().drawString(font, Component.literal(label), textX, textY, PocketTheme.TEXT_MAIN, true);
+        context.graphics().text(font, Component.literal(label), textX, textY, PocketTheme.TEXT_MAIN, true);
     }
 
     // =====================================================================

@@ -1,11 +1,11 @@
 package com.pocketcanvascore.render;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * Universal render adapter for Minecraft 26.1 Tiny Takeover.
  */
 public interface PocketRenderContext {
-    GuiGraphics graphics();
+    GuiGraphicsExtractor graphics();
     float delta();
 }
